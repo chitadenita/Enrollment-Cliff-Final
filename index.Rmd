@@ -1,0 +1,98 @@
+---
+title: "Untitled"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(ggplot2)
+library(tidyverse)
+library(ggplot2)
+library(ggtext)
+library(dplyr)
+library(tidytext)
+library(countrycode)
+library(usmap)
+library(ggrepel)
+library(scales)
+library(R.utils)
+library(tigris)
+library(tidycensus)
+library(elevatr)
+library(here)
+library(tmap)
+library(sf)
+library(covr)
+library(proto)
+library(modelsummary)
+library(flextable)
+require(osmdata)
+require(viridis)
+require(tmap)
+require(ggthemes)
+require(gridExtra)
+require(scales)
+require(lubridate)
+```
+
+```{r}
+
+fallenroll <- read_csv('./data/FallEnroll.csv')
+
+enrollchange <- fallenroll[, c("State", "enroll_chg" )]
+
+enrollchange <- fallenroll %>% 
+  select(State, enroll_chg) %>% 
+  rename(NAME = State)
+
+enroll_long <-fallenroll %>%
+              pivot_longer(cols = -c(State, enroll_chg),
+                           names_to = "Year",
+                           values_to = "Enrollment") %>% 
+  mutate(Year = as.numeric(Year))
+
+enroll_long <- enroll_long %>%
+  mutate(LineWidth = ifelse(State %in% c("Georgia", "District of Columbia"), 3, 0.5))
+
+enrollmap <- states(year = 2022,  progress_bar = FALSE)
+
+enrollmap2 <- left_join(enrollmap, enrollchange) %>% 
+  filter(!is.na(enroll_chg))
+
+enrollmap2$INTPTLAT <- as.numeric(enrollmap2$INTPTLAT)
+enrollmap2$INTPTLON <- as.numeric(enrollmap2$INTPTLON)
+
+```
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Chart A
+
+```{r}
+ggplot()+
+  geom_sf(data = enrollmap2, aes(fill=enroll_chg))+
+  geom_text(data = enrollmap2, aes(x=INTPTLON, y=INTPTLAT, label = enroll_chg), color = "black", size = 1.5) +
+  theme_void() +
+  scale_fill_viridis (name = '',
+                      limits = c(-.4, .65),
+                      breaks = c(-.4, -.2, .0, 0.2, .4, .6),
+                      labels = c('-40%', '-20%', '0%', '20%','40%', '60%'))+
+  labs(title = "Percent change in Fall Public College Enrollments 2000 - 2021",
+       subtitle = "Georgia has the highest rate of change, D.C. has the lowest") +
+  theme(plot.subtitle = element_markdown(margin = margin(b=10), hjust = 0, size = 8),
+        legend.text = element_text(size = 6))+
+  coord_sf(xlim = c(-175,-65))
+```
+
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+### Chart C
+
+
